@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: videocheviri-config
+  namespace: videocheviri
+  labels:
+    app: videocheviri-backend
+data:
+  LOG_LEVEL: "info"
+  WHISPER_MODEL: "small"
+  WORKERS: "1"

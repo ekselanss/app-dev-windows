@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: videocheviri-backend
+  namespace: videocheviri
+  labels:
+    app: videocheviri-backend
+    app.kubernetes.io/name: videocheviri-backend
+    app.kubernetes.io/version: "1.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: videocheviri-backend
+  template:
+    metadata:
+      labels:
+        app: videocheviri-backend
+    spec:
+      containers:
+        - name: backend
+          image: ekselanss/videocheviri-backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: videocheviri-config
+            - secretRef:
+                name: videocheviri-secret
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8000
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: whisper-cache
+              mountPath: /root/.cache/huggingface
+      volumes:
+        - name: whisper-cache
+          emptyDir: {}
+      restartPolicy: Always

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: videocheviri
+  labels:
+    app.kubernetes.io/name: videocheviri
+    app.kubernetes.io/managed-by: kubectl
