@@ -51,7 +51,7 @@ class WhisperService:
             # Ses enerjisi log: sessizlik mi yoksa gerçek ses mi?
             rms = float(np.sqrt(np.mean(audio_array ** 2)))
             logger.info(f"Ses RMS: {rms:.4f}")
-            if rms < 0.005:
+            if rms < 0.02:
                 logger.info("Ses çok sessiz, atlandı")
                 return {"text": "", "language": "unknown", "confidence": 0.0}
 
@@ -65,13 +65,13 @@ class WhisperService:
                 condition_on_previous_text=False,
                 initial_prompt=None,
                 compression_ratio_threshold=2.4,
-                no_speech_threshold=0.9,
+                no_speech_threshold=0.45,
                 log_prob_threshold=-1.0,
                 vad_filter=True,
                 vad_parameters={
-                    "threshold": 0.3,
-                    "min_speech_duration_ms": 100,
-                    "min_silence_duration_ms": 500,
+                    "threshold": 0.5,
+                    "min_speech_duration_ms": 200,
+                    "min_silence_duration_ms": 400,
                     "speech_pad_ms": 200,
                 },
             )

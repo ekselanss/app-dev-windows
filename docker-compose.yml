@@ -17,6 +17,7 @@ services:
       - LOG_LEVEL=info
       - WHISPER_MODEL=base
       - WORKERS=1
+      - TZ=Europe/Istanbul
     volumes:
       - whisper-cache:/root/.cache/huggingface
     deploy:
