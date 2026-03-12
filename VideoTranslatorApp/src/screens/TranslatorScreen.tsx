@@ -20,6 +20,9 @@ import {
   NativeModules,
   DeviceEventEmitter,
   AppState,
+  Modal,
+  TextInput,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -31,6 +34,7 @@ import { ConnectionStatusBar } from '../components/ConnectionStatusBar';
 import { requestMicrophonePermission } from '../utils/permissions';
 import { useTranslationHistory } from '../hooks/useTranslationHistory';
 import { HistoryScreen } from './HistoryScreen';
+import { loadServerUrl, saveServerUrl, getServerUrl } from '../utils/serverConfig';
 
 const OverlayNative = NativeModules.OverlayService;
 const ForegroundService = NativeModules.ForegroundService;
@@ -58,9 +62,20 @@ export function TranslatorScreen() {
   const [overlayPermission, setOverlayPermission] = useState<boolean>(false);
   const [showHistory, setShowHistory] = useState(false);
   const [useSpeechMode] = useState(() => captionBridge.isAvailable());
+  const [showSettings, setShowSettings] = useState(false);
+  const [serverUrl, setServerUrl] = useState('');
+  const [serverUrlInput, setServerUrlInput] = useState('');
 
   const { history, addEntry, deleteEntry, clearAll } = useTranslationHistory();
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  // Sunucu URL'sini yükle
+  useEffect(() => {
+    loadServerUrl().then(url => {
+      setServerUrl(url);
+      setServerUrlInput(url);
+    });
+  }, []);
 
   // Overlay izni kontrol
   useEffect(() => {
@@ -206,9 +221,14 @@ export function TranslatorScreen() {
         <View style={styles.topBar}>
           <Text style={styles.appTitle}>🎬 VideoÇeviri</Text>
           {isActive && <ConnectionStatusBar status={connectionStatus} />}
-          <TouchableOpacity onPress={() => setShowHistory(true)} style={styles.historyBtn}>
-            <Text style={styles.historyBtnText}>📋{history.length > 0 ? ` ${history.length}` : ''}</Text>
-          </TouchableOpacity>
+          <View style={styles.topBarRight}>
+            <TouchableOpacity onPress={() => { setServerUrlInput(getServerUrl()); setShowSettings(true); }} style={styles.settingsBtn}>
+              <Text style={styles.settingsBtnText}>⚙️</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowHistory(true)} style={styles.historyBtn}>
+              <Text style={styles.historyBtnText}>📋{history.length > 0 ? ` ${history.length}` : ''}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Mod etiketi */}
@@ -283,6 +303,50 @@ export function TranslatorScreen() {
           />
         )}
 
+        {/* Sunucu Ayarları Modalı */}
+        <Modal visible={showSettings} transparent animationType="fade">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Sunucu Ayarları</Text>
+              <Text style={styles.modalLabel}>Sunucu Adresi:</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={serverUrlInput}
+                onChangeText={setServerUrlInput}
+                placeholder="https://abc123.ngrok-free.app"
+                placeholderTextColor="#555"
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+              />
+              <Text style={styles.modalHint}>
+                USB: http://localhost:8000{'\n'}
+                WiFi: http://192.168.x.x:8000{'\n'}
+                Internet: https://xxx.ngrok-free.app
+              </Text>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={styles.modalBtnCancel}
+                  onPress={() => setShowSettings(false)}>
+                  <Text style={styles.modalBtnText}>İptal</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modalBtnSave}
+                  onPress={async () => {
+                    const url = serverUrlInput.trim();
+                    if (!url) return;
+                    await saveServerUrl(url);
+                    setServerUrl(url);
+                    setShowSettings(false);
+                    Alert.alert('Kaydedildi', `Sunucu: ${url}\n\nBağlantıyı yeniden başlatın.`);
+                  }}>
+                  <Text style={styles.modalBtnText}>Kaydet</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
       </View>
     </SafeAreaView>
   );
@@ -293,6 +357,9 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 },
   appTitle: { color: '#fff', fontSize: 20, fontWeight: '700', letterSpacing: -0.5 },
+  topBarRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  settingsBtn: { padding: 6 },
+  settingsBtnText: { fontSize: 18 },
   historyBtn: { padding: 6 },
   historyBtnText: { fontSize: 18, color: '#888' },
   modeBadgeRow: { alignItems: 'center', marginBottom: 4 },
@@ -315,4 +382,14 @@ const styles = StyleSheet.create({
   micLabel: { color: '#888', fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
   permissionBanner: { backgroundColor: '#2a1a00', borderTopWidth: 1, borderTopColor: '#ff9800', paddingHorizontal: 16, paddingVertical: 10 },
   permissionText: { color: '#ff9800', fontSize: 13, textAlign: 'center' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { backgroundColor: '#1a1a2e', borderRadius: 16, padding: 24, width: '85%', borderWidth: 1, borderColor: '#333' },
+  modalTitle: { color: '#fff', fontSize: 18, fontWeight: '700', marginBottom: 16, textAlign: 'center' },
+  modalLabel: { color: '#aaa', fontSize: 13, marginBottom: 6 },
+  modalInput: { backgroundColor: '#0a0a0a', borderRadius: 8, borderWidth: 1, borderColor: '#333', color: '#fff', fontSize: 14, padding: 12, marginBottom: 8 },
+  modalHint: { color: '#555', fontSize: 11, lineHeight: 18, marginBottom: 16 },
+  modalButtons: { flexDirection: 'row', gap: 12 },
+  modalBtnCancel: { flex: 1, backgroundColor: '#333', borderRadius: 8, padding: 12, alignItems: 'center' },
+  modalBtnSave: { flex: 1, backgroundColor: '#4CAF50', borderRadius: 8, padding: 12, alignItems: 'center' },
+  modalBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
 });

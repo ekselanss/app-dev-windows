@@ -32,6 +32,12 @@ VideoTranslatorApp/ios/.xcode.env.local
 screen*.png
 .claude/
 
+# Tools (binary)
+tools/
+
+# CMake build (Windows short path workaround)
+/vc-build/
+
 # Temp scripts
 fix*.ps1
 setup*.ps1

@@ -77,6 +77,13 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
+    // Windows 260 karakter yol limiti workaround
+    externalNativeBuild {
+        cmake {
+            buildStagingDirectory = file("C:/vc-build")
+        }
+    }
+
     namespace "com.videotranslatorapp"
     defaultConfig {
         applicationId "com.videotranslatorapp"

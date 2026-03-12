@@ -14,19 +14,7 @@ export interface WSMessage {
 type MessageHandler = (message: WSMessage) => void;
 type StatusHandler = (status: 'connecting' | 'connected' | 'disconnected' | 'error') => void;
 
-// DEV: adb reverse tcp:8000 tcp:8000 aktifken localhost çalışır (USB bağlantısı)
-const DEV_SERVER_IP = 'localhost';
-const WS_BASE_URL = __DEV__
-  ? `ws://${DEV_SERVER_IP}:8000/ws/translate`
-  : 'wss://your-production-server.com/ws/translate';
-
-const WS_FAST_URL = __DEV__
-  ? `ws://${DEV_SERVER_IP}:8000/ws/fast`
-  : 'wss://your-production-server.com/ws/fast';
-
-const HTTP_BASE_URL = __DEV__
-  ? `http://${DEV_SERVER_IP}:8000`
-  : 'https://your-production-server.com';
+import { getWsUrls } from '../utils/serverConfig';
 
 /**
  * Accessibility/SpeechRecognizer modunda metin doğrudan çevrilir.
@@ -37,7 +25,8 @@ export async function translateTextOnly(
   sourceLanguage: string,
 ): Promise<{ translated: string; provider: string } | null> {
   try {
-    const res = await fetch(`${HTTP_BASE_URL}/api/translate`, {
+    const { http } = getWsUrls();
+    const res = await fetch(`${http}/api/translate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, source_language: sourceLanguage }),
@@ -57,7 +46,7 @@ class WebSocketService {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private reconnectAttempts = 0;
   private isIntentionalDisconnect = false;
-  private baseUrl: string = WS_BASE_URL;
+  private baseUrl: string = '';
 
   constructor() {
     this.sessionId = 'mobile_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
@@ -67,7 +56,8 @@ class WebSocketService {
     this.messageHandler = onMessage;
     this.statusHandler = onStatus;
     this.isIntentionalDisconnect = false;
-    this.baseUrl = fast ? WS_FAST_URL : WS_BASE_URL;
+    const urls = getWsUrls();
+    this.baseUrl = fast ? urls.fast : urls.translate;
     this._connect();
   }
 
