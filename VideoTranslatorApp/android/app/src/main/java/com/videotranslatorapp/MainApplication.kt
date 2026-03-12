@@ -18,7 +18,6 @@ class MainApplication : Application(), ReactApplication {
           add(ForegroundServicePackage())
           add(OverlayPackage())
           add(SystemAudioPackage())
-          add(LiveCaptionPackage())
           add(SpeechRecognizerPackage())
         },
     )
